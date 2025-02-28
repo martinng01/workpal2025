@@ -1,6 +1,11 @@
-import { int, mysqlTable, varchar } from "drizzle-orm/mysql-core";
+import { mysqlTable, varchar } from "drizzle-orm/mysql-core";
+import { registration } from "./registration";
+import { relations } from "drizzle-orm";
 
-export const teacherTable = mysqlTable("teachers", {
-  id: int("id").primaryKey().autoincrement(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
+export const teacher = mysqlTable("teachers", {
+  email: varchar("email", { length: 255 }).primaryKey(),
 });
+
+export const teacherRelations = relations(teacher, ({ many }) => ({
+  registration: many(registration),
+}));
