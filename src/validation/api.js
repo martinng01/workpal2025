@@ -7,3 +7,9 @@ export const registerSchema = z.object({
     message: "At least one student is required",
   }),
 });
+
+export const commonStudentsSchema = z.object({
+  teacher: z.array(emailSchema).nonempty({
+    message: "At least one teacher is required",
+  }),
+});

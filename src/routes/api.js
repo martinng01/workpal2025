@@ -1,7 +1,7 @@
 import express from "express";
 import { validate } from "../middleware/zodValidator.js";
-import { registerSchema } from "../validation/api.js";
-import { eq, inArray } from "drizzle-orm";
+import { commonStudentsSchema, registerSchema } from "../validation/api.js";
+import { eq, inArray, count, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
   teacher as teacherSchema,
@@ -86,3 +86,52 @@ router.post("/register", validate(registerSchema), async (req, res) => {
     });
   }
 });
+
+router.get(
+  "/commonstudents",
+  validate(commonStudentsSchema),
+  async (req, res) => {
+    const teachers = req.query.teacher;
+    const teacherEmails = Array.isArray(teachers) ? teachers : [teachers]; // Ensure teachers is an array
+
+    try {
+      const existingTeachers = await db
+        .select({ email: teacherSchema.email })
+        .from(teacherSchema)
+        .where(inArray(teacherSchema.email, teacherEmails));
+
+      if (existingTeachers.length !== teacherEmails.length) {
+        const missingTeachers = teacherEmails.filter(
+          (email) => !existingTeachers.some((t) => t.email === email)
+        );
+        return res.status(404).json({
+          message: "Some teachers not found",
+          details: `The following teachers do not exist: ${missingTeachers.join(
+            ", "
+          )}`,
+        });
+      }
+
+      const commonStudents = await db
+        .select({ studentEmail: registrationSchema.studentEmail })
+        .from(registrationSchema)
+        .where(inArray(registrationSchema.teacherEmail, teacherEmails))
+        .groupBy(registrationSchema.studentEmail)
+        .having(
+          sql`COUNT(DISTINCT ${registrationSchema.teacherEmail}) = ${count(
+            teacherEmails
+          )}`
+        );
+
+      return res.status(200).json({
+        students: commonStudents,
+      });
+    } catch (error) {
+      console.error("Error fetching common students:", error);
+      return res.status(500).json({
+        message: "Failed to retrieve common students",
+        error: error.message,
+      });
+    }
+  }
+);
