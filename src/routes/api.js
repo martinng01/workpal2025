@@ -5,13 +5,14 @@ import {
   registerSchema,
   suspendStudentSchema,
 } from "../validation/api.js";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
   teacher as teacherSchema,
   student as studentSchema,
   registration as registrationSchema,
 } from "../db/schema/index.js";
+import { extractEmailsFromText } from "../utils/index.js";
 
 export const router = express.Router();
 
@@ -154,7 +155,6 @@ router.post("/suspend", validate(suspendStudentSchema), async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Step 2: Check if the student is already suspended
     if (student[0].status === "suspended") {
       return res.status(400).json({ message: "Student is already suspended" });
     }
@@ -167,5 +167,30 @@ router.post("/suspend", validate(suspendStudentSchema), async (req, res) => {
     return res.status(204).end();
   } catch (error) {
     console.error("Error suspending student:", error);
+  }
+});
+
+router.post("/retrievefornotifications", async (req, res) => {
+  const { teacher: teacherEmail, notification } = req.body;
+
+  try {
+    const mentionedEmails = extractEmailsFromText(notification);
+
+    const recipients = await db
+      .select({ studentEmail: registrationSchema.studentEmail })
+      .from(registrationSchema)
+      .where(
+        and(
+          eq(registrationSchema.teacherEmail, teacherEmail),
+          inArray(registrationSchema.studentEmail, mentionedEmails)
+        )
+      );
+
+    return res.status(200).json({
+      recipients: recipients.map((r) => r.studentEmail),
+    });
+  } catch (error) {
+    console.error("Error retrieving students for notification:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });

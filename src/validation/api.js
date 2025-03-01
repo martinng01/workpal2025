@@ -17,3 +17,8 @@ export const commonStudentsSchema = z.object({
 export const suspendStudentSchema = z.object({
   student: emailSchema,
 });
+
+export const notificationSchema = z.object({
+  teacher: emailSchema,
+  notification: z.string(),
+});
