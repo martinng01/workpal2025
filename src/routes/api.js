@@ -1,7 +1,7 @@
 import express from "express";
 import { validate } from "../middleware/zodValidator.js";
 import { commonStudentsSchema, registerSchema } from "../validation/api.js";
-import { eq, inArray, count, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
   teacher as teacherSchema,
@@ -118,9 +118,7 @@ router.get(
         .where(inArray(registrationSchema.teacherEmail, teacherEmails))
         .groupBy(registrationSchema.studentEmail)
         .having(
-          sql`COUNT(DISTINCT ${registrationSchema.teacherEmail}) = ${count(
-            teacherEmails
-          )}`
+          sql`COUNT(DISTINCT ${registrationSchema.teacherEmail}) = ${teacherEmails.length}`
         );
 
       return res.status(200).json({
