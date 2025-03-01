@@ -1,6 +1,10 @@
 import express from "express";
 import { validate } from "../middleware/zodValidator.js";
-import { commonStudentsSchema, registerSchema } from "../validation/api.js";
+import {
+  commonStudentsSchema,
+  registerSchema,
+  suspendStudentSchema,
+} from "../validation/api.js";
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
@@ -133,3 +137,35 @@ router.get(
     }
   }
 );
+
+router.post("/suspend", validate(suspendStudentSchema), async (req, res) => {
+  const { student: studentEmail } = req.body;
+
+  console.log(studentEmail);
+
+  try {
+    const student = await db
+      .select()
+      .from(studentSchema)
+      .where(eq(studentSchema.email, studentEmail))
+      .limit(1);
+
+    if (student.length === 0) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Step 2: Check if the student is already suspended
+    if (student[0].status === "suspended") {
+      return res.status(400).json({ message: "Student is already suspended" });
+    }
+
+    await db
+      .update(studentSchema)
+      .set({ status: "suspended" })
+      .where(eq(studentSchema.email, studentEmail));
+
+    return res.status(204).end();
+  } catch (error) {
+    console.error("Error suspending student:", error);
+  }
+});

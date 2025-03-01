@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "061bdb6f-9408-4f49-994d-c29ff7cfaae9",
+  "id": "cd6fb20b-02af-427a-8a03-9cbf4ea32e94",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "students": {
@@ -12,6 +12,13 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('active','suspended')",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         }
       },

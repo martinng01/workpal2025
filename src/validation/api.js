@@ -13,3 +13,7 @@ export const commonStudentsSchema = z.object({
     message: "At least one teacher is required",
   }),
 });
+
+export const suspendStudentSchema = z.object({
+  student: emailSchema,
+});

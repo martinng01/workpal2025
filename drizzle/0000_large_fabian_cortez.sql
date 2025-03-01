@@ -1,5 +1,6 @@
 CREATE TABLE `students` (
 	`email` varchar(255) NOT NULL,
+	`status` enum('active','suspended'),
 	CONSTRAINT `students_email` PRIMARY KEY(`email`)
 );
 --> statement-breakpoint

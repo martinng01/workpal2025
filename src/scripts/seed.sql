@@ -1,13 +1,14 @@
 BEGIN;
 
 INSERT INTO
-  students (email)
+  students (email, status)
 VALUES
-  ('studentjon@gmail.com'),
-  ('studenthon@gmail.com'),
-  ('commonstudent1@gmail.com'),
-  ('commonstudent2@gmail.com'),
-  ('student_only_under_teacher_ken@gmail.com');
+  ('studentjon@gmail.com', 'active'),
+  ('studenthon@gmail.com', 'active'),
+  ('commonstudent1@gmail.com', 'active'),
+  ('commonstudent2@gmail.com', 'active'),
+  ('student_only_under_teacher_ken@gmail.com', 'active'),
+  ('studentmary@gmail.com', 'active');
 
 INSERT INTO
   teachers (email)
