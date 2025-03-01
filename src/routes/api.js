@@ -46,15 +46,36 @@ router.post("/register", validate(registerSchema), async (req, res) => {
       });
     }
 
-    await db
-      .insert(registrationSchema)
-      .values(
-        existingStudents.map((student) => ({
-          teacherEmail: existingTeacher.email,
-          studentEmail: student.email,
-        }))
+    const existingRegistrations = await db
+      .select()
+      .from(registrationSchema)
+      .where(
+        inArray(
+          registrationSchema.studentEmail,
+          existingStudents.map((s) => s.email)
+        )
       )
-      .onDuplicateKeyUpdate({ set: { teacherEmail: existingTeacher.email } });
+      .where(eq(registrationSchema.teacherEmail, existingTeacher.email));
+
+    const alreadyRegistered = new Set(
+      existingRegistrations.map((reg) => reg.studentEmail)
+    );
+    const newRegistrations = existingStudents.filter(
+      (student) => !alreadyRegistered.has(student.email)
+    );
+
+    if (newRegistrations.length === 0) {
+      return res.status(409).json({
+        message: "All students are already registered under this teacher",
+      });
+    }
+
+    await db.insert(registrationSchema).values(
+      newRegistrations.map((student) => ({
+        teacherEmail: existingTeacher.email,
+        studentEmail: student.email,
+      }))
+    );
 
     return res.status(204).end();
   } catch (error) {
