@@ -1,5 +1,5 @@
 import { mysqlTable, varchar } from "drizzle-orm/mysql-core";
-import { registration } from "./registration";
+import { registration } from "./registration.js";
 import { relations } from "drizzle-orm";
 
 export const student = mysqlTable("students", {

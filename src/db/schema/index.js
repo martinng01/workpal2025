@@ -1,3 +1,3 @@
-export * from "./student";
-export * from "./registration";
-export * from "./teacher";
+export * from "./student.js";
+export * from "./registration.js";
+export * from "./teacher.js";

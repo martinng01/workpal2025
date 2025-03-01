@@ -1,19 +1,12 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "894c3ca4-ff0e-4d66-96ca-248694775458",
+  "id": "061bdb6f-9408-4f49-994d-c29ff7cfaae9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "students": {
       "name": "students",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
         "email": {
           "name": "email",
           "type": "varchar(255)",
@@ -25,43 +18,63 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "students_id": {
-          "name": "students_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "students_email_unique": {
-          "name": "students_email_unique",
+        "students_email": {
+          "name": "students_email",
           "columns": [
             "email"
           ]
         }
       },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "registrations": {
       "name": "registrations",
       "columns": {
-        "teacher_id": {
-          "name": "teacher_id",
-          "type": "int",
+        "teacher_email": {
+          "name": "teacher_email",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "student_id": {
-          "name": "student_id",
-          "type": "int",
+        "student_email": {
+          "name": "student_email",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "registrations_teacher_email_teachers_email_fk": {
+          "name": "registrations_teacher_email_teachers_email_fk",
+          "tableFrom": "registrations",
+          "tableTo": "teachers",
+          "columnsFrom": [
+            "teacher_email"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "registrations_student_email_students_email_fk": {
+          "name": "registrations_student_email_students_email_fk",
+          "tableFrom": "registrations",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_email"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
@@ -69,13 +82,6 @@
     "teachers": {
       "name": "teachers",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
         "email": {
           "name": "email",
           "type": "varchar(255)",
@@ -87,21 +93,14 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "teachers_id": {
-          "name": "teachers_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "teachers_email_unique": {
-          "name": "teachers_email_unique",
+        "teachers_email": {
+          "name": "teachers_email",
           "columns": [
             "email"
           ]
         }
       },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     }
   },
