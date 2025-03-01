@@ -7,6 +7,9 @@
     "db:start": "docker stop workpal2025 || true && docker rm workpal2025 || true && docker run --name workpal2025 -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=workpal2025 -d -p 3306:3306 mysql",
     "db:gen": "npx drizzle-kit generate --config=drizzle.config.js",
     "db:mig": "npx drizzle-kit migrate --config=drizzle.config.js",
+    "db:reset": "docker exec -i workpal2025 mysql -u root -ppassword workpal2025 < ./src/scripts/reset.sql",
+    "db:seed:core": "docker exec -i workpal2025 mysql -u root -ppassword workpal2025 < ./src/scripts/seed.sql",
+    "db:seed": "npm run db:reset && npm run db:mig && npm run db:seed:core",
     "dev": "nodemon src/app.js"
   },
   "keywords": [],
@@ -16,7 +19,8 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
     "express": "^4.21.2",
-    "mysql2": "^3.12.0"
+    "mysql2": "^3.12.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
