@@ -5,44 +5,39 @@ import {
   registerSchema,
   suspendStudentSchema,
 } from "../validation/api.js";
-import { eq, inArray, sql, and } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
-  teacher as teacherSchema,
   student as studentSchema,
   registration as registrationSchema,
 } from "../db/schema/index.js";
 import { extractEmailsFromText } from "../utils/index.js";
+import {
+  checkIfStudentExists,
+  checkIfMultipleStudentsExist,
+  checkIfTeacherExists,
+  checkifMultipleTeachersExist,
+} from "../validation/utils.js";
 
 export const router = express.Router();
 
 router.post("/register", validate(registerSchema), async (req, res) => {
-  const { teacher, students } = req.body;
+  const { teacher: teacherEmail, students: studentEmails } = req.body;
 
   try {
-    const [existingTeacher] = await db
-      .select({ email: teacherSchema.email })
-      .from(teacherSchema)
-      .where(eq(teacherSchema.email, teacher))
-      .limit(1);
-
-    if (!existingTeacher) {
+    const teacherExists = await checkIfTeacherExists(teacherEmail);
+    if (!teacherExists) {
       return res.status(404).json({
         message: "Teacher not found",
-        error: `Teacher with email ${teacher} does not exist`,
+        error: `Teacher with email ${teacherEmail} does not exist`,
       });
     }
 
-    const existingStudents = await db
-      .select()
-      .from(studentSchema)
-      .where(inArray(studentSchema.email, students));
+    const { missingStudents } = await checkIfMultipleStudentsExist(
+      studentEmails
+    );
 
-    if (existingStudents.length !== students.length) {
-      const missingStudents = students.filter(
-        (email) => !existingStudents.some((s) => s.email === email)
-      );
-
+    if (missingStudents.length > 0) {
       return res.status(404).json({
         message: "Some students not found",
         details: `The following students do not exist: ${missingStudents.join(
@@ -57,15 +52,15 @@ router.post("/register", validate(registerSchema), async (req, res) => {
       .where(
         inArray(
           registrationSchema.studentEmail,
-          existingStudents.map((s) => s.email)
+          studentEmails.map((s) => s.email)
         )
       )
-      .where(eq(registrationSchema.teacherEmail, existingTeacher.email));
+      .where(eq(registrationSchema.teacherEmail, teacherEmail));
 
     const alreadyRegistered = new Set(
       existingRegistrations.map((reg) => reg.studentEmail)
     );
-    const newRegistrations = existingStudents.filter(
+    const newRegistrations = studentEmails.filter(
       (student) => !alreadyRegistered.has(student.email)
     );
 
@@ -77,7 +72,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
 
     await db.insert(registrationSchema).values(
       newRegistrations.map((student) => ({
-        teacherEmail: existingTeacher.email,
+        teacherEmail: teacherEmail,
         studentEmail: student.email,
       }))
     );
@@ -100,15 +95,11 @@ router.get(
     const teacherEmails = Array.isArray(teachers) ? teachers : [teachers]; // Ensure teachers is an array
 
     try {
-      const existingTeachers = await db
-        .select({ email: teacherSchema.email })
-        .from(teacherSchema)
-        .where(inArray(teacherSchema.email, teacherEmails));
+      const { missingTeachers } = await checkifMultipleTeachersExist(
+        teacherEmails
+      );
 
-      if (existingTeachers.length !== teacherEmails.length) {
-        const missingTeachers = teacherEmails.filter(
-          (email) => !existingTeachers.some((t) => t.email === email)
-        );
+      if (missingTeachers.length > 0) {
         return res.status(404).json({
           message: "Some teachers not found",
           details: `The following teachers do not exist: ${missingTeachers.join(
@@ -142,18 +133,19 @@ router.get(
 router.post("/suspend", validate(suspendStudentSchema), async (req, res) => {
   const { student: studentEmail } = req.body;
 
-  console.log(studentEmail);
-
   try {
+    const studentExists = await checkIfStudentExists(studentEmail);
+    if (!studentExists) {
+      return res.status(404).json({
+        message: "Student not found",
+      });
+    }
+
     const student = await db
-      .select()
+      .select({ email: studentSchema.email, status: studentSchema.status })
       .from(studentSchema)
       .where(eq(studentSchema.email, studentEmail))
       .limit(1);
-
-    if (student.length === 0) {
-      return res.status(404).json({ message: "Student not found" });
-    }
 
     if (student[0].status === "suspended") {
       return res.status(400).json({ message: "Student is already suspended" });
@@ -176,19 +168,48 @@ router.post("/retrievefornotifications", async (req, res) => {
   try {
     const mentionedEmails = extractEmailsFromText(notification);
 
-    const recipients = await db
+    const { missingStudents } = await checkIfMultipleStudentsExist(
+      mentionedEmails
+    );
+
+    if (missingStudents.length > 0) {
+      return res.status(404).json({
+        message: "Some students not found",
+        details: `The following students do not exist: ${missingStudents.join(
+          ", "
+        )}`,
+      });
+    }
+
+    const teacherExists = await checkIfTeacherExists(teacherEmail);
+    if (!teacherExists) {
+      return res.status(404).json({
+        message: "Teacher not found",
+        error: `Teacher with email ${teacherEmail} does not exist`,
+      });
+    }
+
+    const studentsRegisteredToTeacher = await db
       .select({ studentEmail: registrationSchema.studentEmail })
       .from(registrationSchema)
-      .where(
-        and(
-          eq(registrationSchema.teacherEmail, teacherEmail),
-          inArray(registrationSchema.studentEmail, mentionedEmails)
-        )
-      );
+      .where(eq(registrationSchema.teacherEmail, teacherEmail));
 
-    return res.status(200).json({
-      recipients: recipients.map((r) => r.studentEmail),
-    });
+    const allEmails = [
+      ...studentsRegisteredToTeacher.map((s) => s.studentEmail),
+      ...mentionedEmails,
+    ];
+
+    const uniqueEmails = [...new Set(allEmails)];
+
+    console.log("Unique emails for notification:", uniqueEmails);
+
+    if (uniqueEmails.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No students found for the notification" });
+    }
+
+    return res.status(200).json({ recipients: uniqueEmails });
   } catch (error) {
     console.error("Error retrieving students for notification:", error);
     return res.status(500).json({ message: "Internal server error" });
