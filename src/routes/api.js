@@ -49,19 +49,14 @@ router.post("/register", validate(registerSchema), async (req, res) => {
     const existingRegistrations = await db
       .select()
       .from(registrationSchema)
-      .where(
-        inArray(
-          registrationSchema.studentEmail,
-          studentEmails.map((s) => s.email)
-        )
-      )
+      .where(inArray(registrationSchema.studentEmail, studentEmails))
       .where(eq(registrationSchema.teacherEmail, teacherEmail));
 
     const alreadyRegistered = new Set(
       existingRegistrations.map((reg) => reg.studentEmail)
     );
     const newRegistrations = studentEmails.filter(
-      (student) => !alreadyRegistered.has(student.email)
+      (studentEmail) => !alreadyRegistered.has(studentEmail)
     );
 
     if (newRegistrations.length === 0) {
@@ -71,9 +66,9 @@ router.post("/register", validate(registerSchema), async (req, res) => {
     }
 
     await db.insert(registrationSchema).values(
-      newRegistrations.map((student) => ({
+      newRegistrations.map((studentEmail) => ({
         teacherEmail: teacherEmail,
-        studentEmail: student.email,
+        studentEmail: studentEmail,
       }))
     );
 

@@ -11,7 +11,8 @@
     "db:reset": "docker exec -i workpal2025 mysql -u root -ppassword workpal2025 < ./src/scripts/reset.sql",
     "db:seed:core": "docker exec -i workpal2025 mysql -u root -ppassword workpal2025 < ./src/scripts/seed.sql",
     "db:seed": "npm run db:reset && npm run db:mig && npm run db:seed:core",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,9 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
     "express": "^4.21.2",
+    "jest": "^29.7.0",
     "mysql2": "^3.12.0",
+    "supertest": "^7.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

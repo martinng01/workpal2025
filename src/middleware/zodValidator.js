@@ -1,13 +1,16 @@
 export const validate = (schema) => async (req, res, next) => {
   try {
-    if (schema.body) {
-      await schema.body.parseAsync(req.body);
-    }
-    if (schema.query) {
-      await schema.query.parseAsync(req.query);
-    }
+    await schema.parseAsync({
+      body: req.body,
+      query: req.query,
+      params: req.params,
+    });
+
     return next();
   } catch (error) {
-    return res.status(400).json({ errors: error.errors });
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: error?.errors || "Invalid request",
+    });
   }
 };

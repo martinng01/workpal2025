@@ -2,7 +2,7 @@ import express from "express";
 import { router as apiRouter } from "./routes/api.js";
 
 const PORT = 3000;
-const app = express();
+export const app = express();
 app.use(express.json());
 app.use("/api", apiRouter);
 
